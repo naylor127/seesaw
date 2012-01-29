@@ -1,5 +1,5 @@
 (ns ^{:doc "Window to learn about keystrokes and keycodes.  Run (start-explorer) to use."}   
-  seesaw-playground.code-entry
+  seesaw.keystroke-explorer
   (:use seesaw.core seesaw.keymap seesaw.mig seesaw.dev seesaw.keystroke
         [clojure.stacktrace :only [e]] [clojure.repl :only [doc]])  
   (:import javax.swing.KeyStroke java.awt.event.KeyEvent))
