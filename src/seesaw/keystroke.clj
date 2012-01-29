@@ -9,9 +9,10 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns seesaw.keystroke
-  (:use [seesaw.util :only [illegal-argument resource resource-key?]])
+  (:use [seesaw.util :only [illegal-argument resource resource-key?]]
+        seesaw.event-utils)
   (:import [javax.swing KeyStroke]
-           [java.awt Toolkit]
+           [java.awt Toolkit AWTKeyStroke]
            [java.awt.event InputEvent])
   (:require [clojure.string :only [join split]]))
 
@@ -47,7 +48,26 @@
     (instance? KeyStroke arg) arg
     (char? arg)               (KeyStroke/getKeyStroke ^Character arg)
     (resource-key? arg)       (keystroke (resource arg))
+    (instance? InputEvent arg) (KeyStroke/getKeyStrokeForEvent arg)
     :else (if-let [ks (KeyStroke/getKeyStroke ^String (preprocess-descriptor (str arg)))]
             ks
             (illegal-argument "Invalid keystroke descriptor: %s" arg))))
 
+(defn analyze-keystroke 
+  "Convert a keystroke to a map of descriptors.  Note that :key-typed events are designed for
+   receiving character input, and are therefore the only ones that reliably generate chars; all
+   other event types (:key-pressed and :key-released) will return nil for the :char field. 
+   Meanwhile, :key-typed events do not generate meaningful :code values, so this key is always 
+   nil for :key-typed events."   
+  [arg]
+  (if-not (instance? AWTKeyStroke arg) (illegal-argument "Invalid keystroke: %s" arg)
+    (let [event-code (.getKeyEventType arg)
+          event (event-type event-code)
+          modifier-int (.getModifiers arg)]
+    {:keystroke (.toString arg)
+     :event event
+     :event-code event-code
+     :char (if (key-typed? event) (.getKeyChar arg) nil)
+     :code (if (key-typed? event) nil (.getKeyCode arg))
+     :modifier-int modifier-int
+     :modifiers (keymask-to-set modifier-int)})))

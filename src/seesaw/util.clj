@@ -198,3 +198,18 @@
     (char? v)         (int (Character/toUpperCase ^Character v))
     :else             (int v)))
 
+(defmacro make-predicates [body kvs]
+  "Take a map of codes to keywords and produce predicates testing for the codes using the body.  
+   The body should take three arguments: the input to the predicate, a key to test against, 
+   and a value to test against.  Thanks to Cedric Greevey on the Clojure list for help with this macro."
+  `(do ~@(map (fn [[n k]] `(defn ~(symbol (str (name k) "?")) [~'e] (~body ~'e ~k ~n))) (eval kvs))))
+
+(defn bit-and? 
+  ([x y] (> (bit-and x y) 0))
+  ([x y & more] (> (apply bit-and x y more) 0))) 
+
+(defn bits-to-set [int-of-bits map-of-items]
+  (let [head (first map-of-items)
+        [i k] (if (number? (head 0)) [0 1] [1 0])]
+  (reduce (fn [accum item] (if (bit-and? int-of-bits (item i))(conj accum (item k)) accum)) #{} map-of-items)))
+
