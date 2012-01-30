@@ -13,7 +13,8 @@
   seesaw.event-utils
   (:use [seesaw.util :only [illegal-argument make-predicates bits-to-set]]
         [clojure.set :only [map-invert]])
-  (:import [java.util EventObject]))
+  (:import [java.util EventObject]
+           [java.awt.event KeyEvent]))
 
 (def ^{:private true} type-map {401 :key-pressed 402 :key-released 400 :key-typed 1001 :action-performed 103 :component-hidden
                                 100 :component-moved 101 :component-resized 102 :component-shown 1004 :focus-gained 1005 :focus-lost
@@ -52,6 +53,27 @@
 
 (defn keymask-to-set [modifier-int]
   (bits-to-set modifier-int keywords-to-masks))
+
+(defn analyze-keyevent 
+  "Convert a key-event to a map of descriptors."   
+  [arg]
+  (if-not (instance? KeyEvent arg) (illegal-argument "Invalid key-event: %s" arg)
+    (let [event-code (.getID arg)
+          event (event-type event-code)
+          modifier-int (.getModifiers arg)]
+      {:char (.getKeyChar arg) 
+       :code (.getKeyCode arg)
+       :location (.getKeyLocation arg)
+       :modifier-int modifier-int
+       :modifiers (keymask-to-set modifier-int)
+       :modifier-text (KeyEvent/getKeyModifiersText modifier-int)
+       :key-text (KeyEvent/getKeyText (.getKeyCode arg))
+       :action? (.isActionKey arg)
+       :event-string (.toString arg)
+       :event-parameters (.paramString arg)
+       :event event
+       :event-code event-code     
+       })))
 
 ;generate predicates to check if the event is of a given type
 (make-predicates (fn [e k n] 

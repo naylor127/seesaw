@@ -10,11 +10,11 @@
 
 (ns ^{:doc "Window to learn about keystrokes and keycodes.  Run (start-explorer) to use."}    
   seesaw.keystroke-explorer
-  (:use seesaw.core seesaw.keymap seesaw.mig seesaw.dev seesaw.keystroke
+  (:use seesaw.core seesaw.keymap seesaw.mig seesaw.dev seesaw.keystroke seesaw.event-utils
         )  
   (:import javax.swing.KeyStroke java.awt.event.KeyEvent))
 
-(def cf (frame :title "to enter keycodes" :minimum-size [1700 :by 150]))
+(def cf (frame :title "to enter keycodes" :minimum-size [1000 :by 150]))
 
 (def pressed-entry (text :minimum-size [70 :by 18]))
 
@@ -28,7 +28,9 @@
 
 (def keystroke-display (text :minimum-size [250 :by 18]))
 
-(def keystroke-analyzed (text :minimum-size [180 :by 40] :multi-line? true))
+(def keystroke-analyzed (text :minimum-size [400 :by 400] :multi-line? true :wrap-lines? true))
+
+(def keyevent-analyzed (text :minimum-size [600 :by 400] :multi-line? true :wrap-lines? true)) 
 
 (def cp (mig-panel :constraints ["wrap 2"]
                    :items [["enter to see key pressed"]
@@ -44,7 +46,9 @@
                            ["keystroke"]
                            [keystroke-display]
                            ["analyzed keystroke"]
-                           [keystroke-analyzed "span" "growy" "growx"]    
+                           ["analyzed keyevent"]
+                           [keystroke-analyzed]                         
+                           [(scrollable keyevent-analyzed) "growx"]    
                            ]))
 
 (defn showf [f] (-> f show! pack!))
@@ -53,38 +57,35 @@
   (config! f :content content)
   content)
 
+(defn config-all! [e]
+  (do
+    (config! type-of-event :text (str (type e)))
+    (config! code-display :text
+             (.. (KeyStroke/getKeyStrokeForEvent e) getKeyCode))
+    (config! keystroke-display :text
+             (.. (KeyStroke/getKeyStrokeForEvent e) toString))
+    (config! keystroke-analyzed :text
+             (str (analyze-keystroke (keystroke e))))
+    (config! keyevent-analyzed :text
+             (str (analyze-keyevent e)))))
+
 (def pressed-listen (listen pressed-entry :key-pressed 
-               (fn [e] (do 
-                         (config! pressed-entry :text "")
-                         (config! type-of-event :text (str (type e)))
-                         (config! code-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) getKeyCode))
-                         (config! keystroke-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) toString))
-                         (config! keystroke-analyzed :text
-                                  (str (analyze-keystroke (keystroke e))))))))
+                            (fn [e] (do 
+                                      (config! pressed-entry :text "")
+                                      (config-all! e)
+                                      ))))
 
 (def typed-listen (listen typed-entry :key-typed 
-               (fn [e] (do 
-                         (config! typed-entry :text "")
-                         (config! type-of-event :text (str (type e)))
-                         (config! code-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) getKeyCode))
-                         (config! keystroke-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) toString))
-                         (config! keystroke-analyzed :text
-                                  (str (analyze-keystroke (keystroke e))))))))
+                          (fn [e] (do 
+                                    (config! typed-entry :text "")
+                                    (config-all! e)
+                                    ))))
 
 (def released-listen (listen released-entry :key-released 
-               (fn [e] (do 
-                         (config! released-entry :text "")
-                         (config! type-of-event :text (str (type e)))
-                         (config! code-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) getKeyCode))
-                         (config! keystroke-display :text
-                                  (.. (KeyStroke/getKeyStrokeForEvent e) toString))
-                         (config! keystroke-analyzed :text
-                                  (str (analyze-keystroke (keystroke e))))))))
+                             (fn [e] (do 
+                                       (config! released-entry :text "")
+                                       (config-all! e)
+                                       ))))
   
 
 (defn start-explorer [] (do

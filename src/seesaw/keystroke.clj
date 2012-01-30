@@ -26,6 +26,9 @@
   (let [mask (modifier-masks (.. (Toolkit/getDefaultToolkit) getMenuShortcutKeyMask))]
     (clojure.string/join mask (clojure.string/split s #"menu"))))
 
+(defn- assemble-descriptor [ & args]
+  "Take a keycode.  Generate key-typed.  Take modifiers.  Take up or down.")
+
 (defn keystroke
   "Convert an argument to a KeyStroke. When the argument is a string, follows 
    the keystroke descriptor syntax for KeyStroke/getKeyStroke (see link below).
@@ -56,11 +59,10 @@
   ([first-arg & args]))
 
 (defn analyze-keystroke 
-  "Convert a keystroke to a map of descriptors.  Note that :key-typed events are designed for
+  "Convert a keystroke to a map of descriptors.  Note that :typed keystrokes are designed for
    receiving character input, and are therefore the only ones that reliably generate chars; all
-   other event types (:key-pressed and :key-released) will return nil for the :char field. 
-   Meanwhile, :key-typed events do not generate meaningful :code values, so this key is always 
-   nil for :key-typed events."   
+   other keystroke types (:pressed and :released) do not generate a char. 
+   Meanwhile, :typed keystrokes do not generate meaningful :code values."   
   [arg]
   (if-not (instance? AWTKeyStroke arg) (illegal-argument "Invalid keystroke: %s" arg)
     (let [event-code (.getKeyEventType arg)
@@ -69,7 +71,7 @@
     {:keystroke (.toString arg)
      :event event
      :event-code event-code
-     :char (if (key-typed? event) (.getKeyChar arg) nil)
-     :code (if (key-typed? event) nil (.getKeyCode arg))
+     :char (.getKeyChar arg) 
+     :code (.getKeyCode arg)
      :modifier-int modifier-int
      :modifiers (keymask-to-set modifier-int)})))
