@@ -28,30 +28,32 @@
 
 (defn keystroke
   "Convert an argument to a KeyStroke. When the argument is a string, follows 
-  the keystroke descriptor syntax for KeyStroke/getKeyStroke (see link below).
-
-  For example,
-
-    (keystroke \"ctrl S\")
-
-  Note that there is one additional modifier supported, \"menu\" which will
-  replace the modifier with the appropriate platform-specific modifier key for
-  menus. For example, on Windows it will be \"ctrl\", while on OSX, it will be
-  the \"command\" key. Yay!
-
-  arg can also be an i18n resource keyword.
-
-  See http://download.oracle.com/javase/6/docs/api/javax/swing/KeyStroke.html#getKeyStroke(java.lang.String)"
-  [arg]
+   the keystroke descriptor syntax for KeyStroke/getKeyStroke (see link below).
+   
+   For example,
+   
+   (keystroke \"ctrl S\")
+   
+   Note that there is one additional modifier supported, \"menu\" which will
+   replace the modifier with the appropriate platform-specific modifier key for
+   menus. For example, on Windows it will be \"ctrl\", while on OSX, it will be
+   the \"command\" key. Yay!
+   
+   arg can also be an i18n resource keyword.
+   
+   See http://download.oracle.com/javase/6/docs/api/javax/swing/KeyStroke.html#getKeyStroke(java.lang.String)"
+  ([arg]
   (cond 
     (nil? arg)                nil
     (instance? KeyStroke arg) arg
     (char? arg)               (KeyStroke/getKeyStroke ^Character arg)
+    (integer? arg)            (KeyStroke/getKeyStroke ^Long arg 0)
     (resource-key? arg)       (keystroke (resource arg))
     (instance? InputEvent arg) (KeyStroke/getKeyStrokeForEvent arg)
     :else (if-let [ks (KeyStroke/getKeyStroke ^String (preprocess-descriptor (str arg)))]
             ks
             (illegal-argument "Invalid keystroke descriptor: %s" arg))))
+  ([first-arg & args]))
 
 (defn analyze-keystroke 
   "Convert a keystroke to a map of descriptors.  Note that :key-typed events are designed for

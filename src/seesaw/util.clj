@@ -205,10 +205,12 @@
   `(do ~@(map (fn [[n k]] `(defn ~(symbol (str (name k) "?")) [~'e] (~body ~'e ~k ~n))) (eval kvs))))
 
 (defn bit-and? 
+  "Shows whether args bitwise-and (i.e. bit-and > 0)"
   ([x y] (> (bit-and x y) 0))
   ([x y & more] (> (apply bit-and x y more) 0))) 
 
 (defn bits-to-set [int-of-bits map-of-items]
+  "Converts an int of bits into a set, given the int and a map of the bitmask to the items (or vice-versa)"
   (let [head (first map-of-items)
         [i k] (if (number? (head 0)) [0 1] [1 0])]
   (reduce (fn [accum item] (if (bit-and? int-of-bits (item i))(conj accum (item k)) accum)) #{} map-of-items)))
