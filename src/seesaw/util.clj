@@ -11,7 +11,8 @@
 (ns seesaw.util
   (:require clojure.string 
             [j18n.core :as j18n])
-  (:import [java.net URL URI MalformedURLException URISyntaxException]))
+  (:import [java.net URL URI MalformedURLException URISyntaxException]
+           java.lang.reflect.Modifier))
 
 (defn illegal-argument 
   "Throw an illegal argument exception formatted as with (clojure.core/format)"
@@ -62,6 +63,14 @@
 (defn- constantize-keyword [k]
   (.. (name k) (toUpperCase) (replace "-" "_")))
 
+(defn- keywordize-constant [c]
+  (keyword (.. c (toLowerCase) (replace "_" "-"))))
+
+(defn get-fields [klass]
+  "gets and keywordizes all the public static fields declared in klass itself (not in supertypes)"
+  (map #(keywordize-constant (.getName %)) 
+       (filter #(and (Modifier/isStatic (.getModifiers %)) (#{klass} (.getDeclaringClass %))) (.getFields klass))))
+
 (defn constant-map
   "Given a class and a list of keywordized constant names returns the 
    values of those fields in a map. The name mapping upper-cases and replaces
@@ -71,8 +80,10 @@
 
    Note that the fields must be static and declared *in* the class, not a 
    supertype.
+   
+   Passed only a class, returns a map of all public static constants in the class
   "
-  [^Class klass & fields]
+  ([^Class klass & fields]
   (let [[options fields] (if (map? (first fields)) [(first fields) (rest fields)] [{} fields])
         {:keys [suffix] :or {suffix ""}} options]
     (reduce
@@ -83,6 +94,8 @@
                       (getDeclaredField (str (constantize-keyword %1) suffix)) 
                       (get nil)))
         fields))))
+  ([^Class klass]
+    (apply constant-map klass (get-fields klass))))
     
   
 (defn camelize
@@ -198,11 +211,25 @@
     (char? v)         (int (Character/toUpperCase ^Character v))
     :else             (int v)))
 
-(defmacro make-predicates [body kvs]
-  "Take a map of codes to keywords and produce predicates testing for the codes using the body.  
-   The body should take three arguments: the input to the predicate, a key to test against, 
-   and a value to test against.  Thanks to Cedric Greevey on the Clojure list for help with this macro."
-  `(do ~@(map (fn [[n k]] `(defn ~(symbol (str (name k) "?")) [~'e] (~body ~'e ~k ~n))) (eval kvs))))
+(defmacro define-predicates [body kvs]
+  "Take a function body, and a map of keywords to codes, kvs, and define predicates of one argument testing for the codes using body.  The names of the predicates are derived from the keys, appending '?' to the name of each key.  
+   The body should take three arguments: the input to the predicate, a key to test against, and a value to test against.  
+   For example: 
+   (define-predicates (fn [z k x]
+                     (or (= z k)
+                         (= z x)))
+                   {:a 1 :b 2})
+   
+   will effectively write
+   
+   (defn a? [x] (or (= x :a)
+                    (= x 1)))
+   and 
+   (defn b? [x] (or (= x :b)
+                    (= x 2)))
+                             
+   Thanks to Cedric Greevey on the Clojure list for help with this macro."
+  `(do ~@(map (fn [[k n]] `(defn ~(symbol (str (name k) "?")) [~'x] (~body ~'x ~k ~n))) (eval kvs))))
 
 (defn bit-and? 
   "Shows whether args bitwise-and (i.e. bit-and > 0)"
@@ -214,4 +241,6 @@
   (let [head (first map-of-items)
         [i k] (if (number? (head 0)) [0 1] [1 0])]
   (reduce (fn [accum item] (if (bit-and? int-of-bits (item i))(conj accum (item k)) accum)) #{} map-of-items)))
+
+
 
