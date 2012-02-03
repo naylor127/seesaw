@@ -1557,18 +1557,25 @@
 
 (defn style-text!
   "Style a JTextPane
-  id identifies a style that has been added to the text pane.
-
-  See:
-
-    (seesaw.core/text)
-    http://download.oracle.com/javase/tutorial/uiswing/components/editorpane.html
-  "
-  [^JTextPane target id ^Integer start ^Integer length]
-  (check-args (instance? JTextPane target) "style-text! only applied to styled-text widgets")
-  (.setCharacterAttributes (.getStyledDocument target)
-                            start length (.getStyle target (name id)) false)
-  target)
+   id identifies a style that has been added to the text pane.  Pass 'true' to replace any
+   existing style on this range with this one, 'false' to add this style to the existing ones.
+   (If this is omitted, default is true). If multiple IDs are passed in a vector, then add all 
+   these styles to the existing styles.     
+   See:
+   
+   (seesaw.core/text)
+   http://download.oracle.com/javase/tutorial/uiswing/components/editorpane.html
+   "
+  ([^JTextPane target id ^Integer start ^Integer length replace]
+    (check-args (instance? JTextPane target) "style-text! only applied to styled-text widgets")
+    (.setCharacterAttributes (.getStyledDocument target)
+                             start length (.getStyle target (name id)) replace)
+    target)
+  ([^JTextPane target id ^Integer start ^Integer length]
+    (if-not (coll? id)
+      (style-text! target id start length true)
+      (dorun (map #(style-text! target % start length false) id)))))
+  
 
 ;*******************************************************************************
 ; JPasswordField
