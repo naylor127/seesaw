@@ -1567,7 +1567,7 @@
   [^JTextPane target id ^Integer start ^Integer length]
   (check-args (instance? JTextPane target) "style-text! only applied to styled-text widgets")
   (.setCharacterAttributes (.getStyledDocument target)
-                            start length (.getStyle target (name id)) true)
+                            start length (.getStyle target (name id)) false)
   target)
 
 ;*******************************************************************************
